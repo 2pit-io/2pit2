@@ -1,0 +1,17 @@
+config/autoload/*
+!config/autoload/*global.json
+config/applicationConfig.json
+config/modules.config.json
+config/*local.json
+node_modules/vendor/*
+public/MDB-Pro
+public/photos/*
+public/img/*
+!public/img/carre80.png
+!public/img/2pit_io
+!public/img/flags
+public/logos/*
+!public/logos/2pit_io
+public/vendor/*
+public/style/*
+

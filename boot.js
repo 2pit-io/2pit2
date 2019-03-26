@@ -1,4 +1,5 @@
 const http = require('http');
+const server = require('2pitSecurity/controller/Server');
 const express = require('express');
 const app = express();
 const Config = require('2pitCore/model/Config');
@@ -6,12 +7,20 @@ const Context = require('2pitCore/model/Context');
 const security = require('2pitSecurity/controller/Connection.js');
 const url = require('url');
 
-app.set('views', './');
-app.use(express.static('public'));
+var config = Config.loadConfig();
 
-function createContext( config, fqdn ) {
+app.set('views', './');
+
+// Define the context transit between controller, model and view
+function createContext( config, request ) {
+
+  // Define the path to public objects (img, css, client js...) depending on they are served by express or by a tiers server
+  let publicPath;
+  if (config.publicServer == "express") publicPath = request.protocol + '://' + request.hostname + ':' + config.port + '/'; // Relative path in this case
+  else publicPath = config.publicPath; // Full path in this case
+
   return new Promise ( (resolve, reject) => {
-    Context.create( config, connector, fqdn )
+    Context.create( config, connector, request, publicPath )
     .then( row => { resolve( row ); } )
     .catch( err => { reject( err ); } );
   });
@@ -32,7 +41,7 @@ function setRoutes( config, connector ) {
 
     app.get('/' + controllerConfig.route, function(request, response) {
       var path = controllerConfig.module.path + 'view/' + controllerId + '/' + controllerConfig.action + '.ejs';
-      createContext( config, request.hostname )
+      createContext( config, request )
       .then( context => {
         controller[controllerId + '_' + controllerConfig.action](request, response, context, connector)
         .then( arguments => { response.render(path, arguments); })
@@ -46,7 +55,7 @@ function setRoutes( config, connector ) {
       var childRoute = controllerConfig.childRoutes[actionId];
       app.get('/' + controllerConfig.route + '/' + childRoute.route, function(request, response) {
         var path = controllerConfig.module.path + 'view/' + controllerId + '/' + childRoute.action + '.ejs';
-        createContext( config, request.hostname )
+        createContext( config, request )
         .then( context => {
           controller[controllerId + '_' + childRoute.action](request, response, context, connector)
           .then( arguments => { response.render(path, arguments); })
@@ -58,7 +67,6 @@ function setRoutes( config, connector ) {
   });
 }
 
-var config = Config.loadConfig();
 var connector = security['Connection_create'];
 setRoutes( config, connector );
 
@@ -67,7 +75,7 @@ var controllerConfig = config.controllers[config.defaultRoute.controller];
 controller = require(controllerConfig.module.path + 'controller/' + config.defaultRoute.controller + 'Controller.js');
 app.get('/', function(request, response) {
   var path = controllerConfig.module.path + 'view/' + controllerId + '/' + config.defaultRoute.action + '.ejs';
-  createContext( config, request.hostname )
+  createContext( config, request )
   .then( context => {
     controller[controllerId + '_' + config.defaultRoute.action](request, response, context, connector)
     .then( arguments => { response.render(path, arguments); })
@@ -76,10 +84,13 @@ app.get('/', function(request, response) {
   .catch( err => { console.log( err ) });
 });
 
+if (config.publicServer == "express") app.use(express.static(config.publicPath));
+
 // Define a page for undefined routes
 app.use(function(request, response, next){
   response.setHeader('Content-Type', 'text/html');
   response.status(404).send('Page introuvable !');
 });
 
-app.listen(8080);
+if (config.protocol == 'http') app.listen(config.port);
+else server.create(app).listen(config.port);

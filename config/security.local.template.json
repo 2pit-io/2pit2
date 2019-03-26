@@ -1,0 +1,12 @@
+{
+  "server": {
+    "key": "./server.key",
+    "certificate": "./server.cert"
+  },
+  "database": {
+    "host": "localhost",
+    "user": "your username",
+    "password": "your password",
+    "database": "2pit_io"
+  }
+}

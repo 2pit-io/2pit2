@@ -1,0 +1,16 @@
+{
+    "modules": {
+      "2pitFlow": {
+        "path": "./node_modules/2pitFlow/"
+      }
+    },
+    "defaultRoute": {
+      "controller": "FlowAccount",
+      "action": "fill"
+    },
+    "protocol": "http",
+    "port": "8080",
+    "publicServer": "express",
+    "publicPath": "public",
+    "dbanager": "Mysql"
+}
